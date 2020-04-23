@@ -1,1 +1,5 @@
-# MIS-431-Final-Project-Spring-2020
+# MIS431 - Data Mining with Business Applications
+## George Mason University
+
+# Final Project - Spring 2020
+## HR Analytics
