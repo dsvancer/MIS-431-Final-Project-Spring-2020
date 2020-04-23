@@ -1,0 +1,353 @@
+---
+title: "Final Project - Spring 2020"
+date: "April 20<sup>th</sup>, 2020"
+output: 
+  html_document: 
+    theme: flatly
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    highlight: tango
+    toc_depth: 4 
+    number_sections: false 
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      comment = "")
+```
+
+<style>
+
+#TOC {
+  margin: 70px 0px 60px 0px;
+}
+
+.tocify ul, .tocify li {
+  line-height: 25px;
+}
+
+.tocify-header {
+  font-weight:bold;
+  font-size: 0.92em;
+}
+
+
+.tocify-subheader .tocify-item {
+  font-size: 0.89em;
+  padding-left: 30px;
+  text-indent: 0;
+  font-weight:normal;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+.list-group-item.active, 
+.list-group-item.active:focus { background-color:#006940;
+                                border-color:#006940;
+}
+
+.list-group-item.active:hover { background-color:#006940;
+                                border-color:#006940;
+}
+
+a {
+    color: #006940;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #fc3;
+  }
+
+h1 {
+    color: #006940;
+}
+
+h2, h3, h4, h5, h6 {
+    color: #44433f;
+}
+
+</style>
+
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+## Add R libraries here
+library(tidyverse)
+library(kableExtra)
+library(kknn)
+
+employee_data <- readRDS('/cloud/project/employee_df.rds')
+
+```
+
+# Introduction
+
+This semester we will be working with a data set from the field of **Human Resources Analytics**. Broadly speaking, this field is concerned with using employee data within a company to optimize objectives such as employee satisfaction, productivity, project management, and most commonly, avoiding employee attrition. Ideally, companies would like to keep **attrition rates** (the proportion of employees leaving a company for other opportunities) as low as possible due to the variable costs and business distruptions that come with having to replace productive employees on short notice.
+
+The objective of this project is to develop a machine learning algorithm for a U.S. based company that will predict the likelihood of their employees leaving for other opportunities. In the recent economy, with an unemployment rate of only 3%, the company has seen an increase in the rate of employee departures. This has taken a toll on their operations and ability to deliver quality products. 
+
+<br>
+
+## Employee Attrition Data
+
+The following data consists of 1,470 employee records for a U.S. based product company. The rows in this data frame represent the attributes of an employee at this company across the variables listed in the table below.
+
+<br>
+
+### Variable Information
+
+```{r echo = FALSE}
+variables <- tibble(Variable = c('left_company', 'department', 'job_level', 'salary',
+                                 'weekly_hours', 'business_travel', 'yrs_at_company',
+                                 'yrs_since_promotion','previous_companies', 'job_satisfaction',
+                                 'performance_rating', 'marital_status', 'miles_from_home'),
+                    Definition = c("Did the employee leave the company? (Yes/No)",
+                                   "Department within the company",
+                                   "Job Level (Associate - Vice President)",
+                                   "Employee yearly salary (US Dollars)",
+                                   " Self-reported average weekly hours spent on the job (company survey)",
+                                   "Level of required business travel",
+                                   "Tenure at the company (years)",
+                                   "Years since last promotion",
+                                   "Number of previous companies for which the employee has worked",
+                                   "Self-reported job satisfaction (company survey)",
+                                   "Most recent annual performance rating",
+                                   "Marital status (Single, Married, or Divorced)",
+                                   "Distance from employee address to office location"),
+                    `Data Type` = c('Factor', 'Factor', 'Factor', 'Numeric', 'Numeric',
+                                    'Factor', 'Numeric', 'Numeric', 'Numeric', 'Factor',
+                                    'Factor', 'Factor', 'Numeric'))
+
+kable(variables) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+<br>
+
+### Raw Data
+```{r}
+
+employee_data
+
+```
+
+
+<br>
+
+
+
+# Exploratory Data Analysis (50 Pts)
+
+<br>
+
+Executives at this bank have hired you as a data science consultant to identify the factors that lead to employees leaving their company. They would like for you to build a predictive model that is able to provided the likelihood of an employee leaving their company to make recommendations on how to minimize this behavior.
+
+Specifically, the broad questions that the executive team is trying to answer include:
+
+1. What are the factors that contribute to employees leaving the company?
+
+2. Is  it  possible  to  predict  whether  an  employee  will leave the company?  If  so,  how  accurate  are  the predictions?
+
+3. How  many  costly  errors  does the predictive model produce (employees that are predicted to stay, but eventually leave the company)?
+
+In this section, you must think of at least 5 relevant questions that explore the relationship between **left_company** and the other variables in the **employee** data set. The goal of your analysis should be discovering which variables drive the differences between employees who do and do not leave the company.
+
+You must answer each question and provide supporting data summaries with either a summary data frame (using `dplyr`/`tidyr`) or a plot (using `ggplot`) or both.
+
+In total, you must have a minimum of 3 plots and 3 summary data frames for the exploratory data analysis section. Among the plots you produce, you must have at least 3 different types (ex. box plot, bar chart, histogram, heat map, etc...)
+
+See the example question below.
+
+## Sample Question {.tabset}
+
+**Is there a relationship between employees leaving the company and their current salary?**
+
+**Answer**: Yes, the data indicates that employees who leave the company tend to have lower salaries when compared to employees who do not. Among the 237 employees that left the company, the average salary was \$76,625. This is over \$20,000 less than the average salary of employees who did not leave the company.
+
+Among the employees *who did not leave the company*, only 10% have a salary that is less than or equal to \$60,000. When looking at employees who did leave the company, this increase to 34%.
+
+
+### Summary Table
+
+```{r echo = TRUE, fig.height=5, fig.width=9}
+employee_data %>% group_by(left_company) %>% 
+                  summarise(n_employees = n(),
+                            min_salary = min(salary),
+                            avg_salary = mean(salary),
+                            max_salary = max(salary),
+                            sd_salary = sd(salary),
+                            pct_less_60k = mean(salary <= 60000))
+```
+
+
+### Data Visulatization
+
+```{r echo = TRUE, fig.height=5, fig.width=9}
+ggplot(data = employee_data, aes(x = salary, fill = left_company)) + 
+   geom_histogram(aes(y = ..density..), color = "white", bins = 20) +
+   facet_wrap(~ left_company, nrow = 2) +
+   labs(title = "Employee Salary Distribution by Status (Left the Comapny - Yes/No)",
+           x = "Salary (US Dollars", y = "Proportion of Employees")
+```
+
+<br>
+
+# Predictive Modeling (75 Pts)
+
+<br>
+
+In this section of the project, you will fit **three classification algorithms** to predict the response variable, **left_company**. You should use all of the other variables in the **employee** data as predictor variables for each model.
+
+For all predictive models that you fit, you must use **cross validation** to study prediction accuracy. This means you must split your original data into a training and test set and perform all necessary model building steps on the training data (this includes finding the optimal probability cut-off and hyperparamters (such as the optimal **k** in KNN or optimal **complexity parameter** in Decision Tress).
+
+Once you have trained your model, you must use it to obtain predictions on your test data and study its performance (F1 Score, False Positive and False Negative Rates).
+
+The first predictive model will be a KNN classification, where I will guide you through the steps of the model building process. 
+
+For the other two models, you will complete the entire process on your own. You may choose from any of the following classification algorithms:
+
+1. Logistic Regression
+2. LDA
+3. QDA
+4. Naive Bayes
+5. Decision Tree
+6. Random Forest
+
+
+The R code below will split the **employee** data into training and test sets and also load the **cf_matrix** function for your model performance assessments.
+
+```{r}
+## Load the cf_matrix function
+source('/cloud/project/cf_matrix_function.R')
+
+# Create a training index vector
+set.seed(314)
+
+training_index <- sample(x = 1:nrow(employee_data), size = floor(0.7*nrow(employee_data)))
+
+# Training and Test Data
+employee_training <- employee_data[training_index, ]
+
+employee_test <- employee_data[-training_index, ]
+
+```
+
+## KNN Classification
+
+We see that *k* = 6 is the optimal value of *k* found using the training data.
+
+```{r}
+# Find Optimal K
+train.kknn(left_company ~ ., 
+           data = employee_training, 
+           kmax = 40)
+
+```
+
+
+**Explore Optimal Probability Cut-Off Value on the Training Data**
+
+```{r}
+
+knn_training_model <-  kknn(left_company ~ ., train = employee_training, 
+                              test = employee_training, # Also training data in this case
+                              k = 6, distance = 2)
+
+# Results data frame on training data
+# Since we are adding posterior probabilities, we must use data.frame()
+knn_training_results <- data.frame(employee_training,
+                                   knn_pred_0.5 = knn_training_model$fitted.values,
+                                   knn_training_model$prob)
+
+```
+
+
+```{r}
+# View results
+knn_training_results
+
+```
+<br>
+
+Next, we use the **cf_matrix()** function to search for an optimal probability cut-off value that maximizes the F_1 Score on the training data. The best cut-off is 0.4, with an F1 score of 0.98.
+
+<br>
+
+```{r}
+# Search for best probability cut-off
+cf_matrix(actual_vec = knn_training_results$left_company,
+          pred_prob_vec = knn_training_results$Yes,
+          positive_val = "Yes",
+          search_cut = TRUE)
+
+```
+<br>
+
+**Obtain Predictions Using Optimal k and Cut-Off On The Test Data**
+
+```{r}
+knn_test_model <-  kknn(left_company ~ ., train = employee_training, 
+                              test = employee_test, # Predictions on test data
+                              k = 6, distance = 2)
+
+```
+
+```{r}
+# Results data frame on test data
+# Since we are adding posterior probabilities, we must use data.frame()
+knn_test_results <- data.frame(employee_test,
+                               knn_pred_0.5 = knn_test_model$fitted.values,
+                               knn_test_model$prob)
+
+```
+
+
+```{r}
+# Add predicted response values based on optimal cut-off
+knn_test_results <- knn_test_results %>% 
+                    mutate(knn_pred_0.4 = ifelse(Yes >= 0.4, "Yes", "No"))
+
+```
+
+<br>
+
+**Confusion Matrix Analysis On The Test Data**
+
+Now we assess the accuarcy of our final model on the test data using the **cf_matrix()** function and the optimal probability cut-off value we discovered during the training process. 
+
+We obtain an F1 score of 0.86, a false negative rate of 16%, and a false positive rate of 2% on the test data. These are the results you should use to compare KNN to the other two methods which you fit to the training data.
+
+
+```{r}
+# Detailed confusion matrix results
+cf_matrix(actual_vec = knn_test_results$left_company,
+          pred_prob_vec = knn_test_results$Yes,
+          positive_val = "Yes", cut_prob = 0.4)
+
+```
+
+<br>
+<br>
+
+
+# Summary of Results (25 Pts)
+
+Write a summary of your overall findings and recommendations to the executives at this company. Think  of  this section as your closing remarks of a presentation, where you summarize your key findings, model performance, and make recommendations to improve HR processes at the comapny. 
+
+Your summary should include:
+
+1. Key findings from your Exploratory Data Analysis. What were the things that stuck out for you in this section and why are they important?
+
+2. Your “best” classification model and a confusion matrix analysis for  this  model, including a discussion  of either  the  false  negative  rate  or  false  positive  rate  (which ever you think is  more important to guard against)
+
+3. Your recommendations to the company on how to reduce employee attrition rates
+
+
