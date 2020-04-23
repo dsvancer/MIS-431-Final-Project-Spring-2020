@@ -1,4 +1,4 @@
-# MIS431 - Data Mining with Business Applications
+# MIS 431 - Data Mining with Business Applications
 Professor David Svancer - George Mason University
 
 # Final Project - Spring 2020
