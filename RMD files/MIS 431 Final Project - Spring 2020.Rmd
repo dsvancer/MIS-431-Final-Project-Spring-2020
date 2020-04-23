@@ -83,7 +83,7 @@ library(tidyverse)
 library(kableExtra)
 library(kknn)
 
-employee_data <- readRDS('/cloud/project/employee_df.rds')
+employee_data <- readRDS('../data/employee_df.rds')
 
 ```
 
@@ -226,7 +226,7 @@ The R code below will split the **employee** data into training and test sets an
 
 ```{r}
 ## Load the cf_matrix function
-source('/cloud/project/cf_matrix_function.R')
+source('../functions/cf_matrix_function.R')
 
 # Create a training index vector
 set.seed(314)
