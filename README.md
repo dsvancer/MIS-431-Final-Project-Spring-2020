@@ -3,3 +3,6 @@ Professor David Svancer - George Mason University
 
 # Final Project - Spring 2020
 HR Analytics
+
+# Detailed Instructions
+https://dsvancer.github.io/MIS-431-Final-Project-Spring-2020/
